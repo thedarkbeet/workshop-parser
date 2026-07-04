@@ -27,3 +27,25 @@ export interface ParseResult {
   /** Items that could not be fully resolved and may need a manual check. */
   warnings: ParseWarning[];
 }
+
+/** Progress stages reported while a collection is being parsed. */
+export type ParsePhase = "collection" | "mods";
+
+export interface ParseProgress {
+  phase: ParsePhase;
+  /** Items processed so far (0 while the total is still unknown). */
+  loaded: number;
+  /** Total items to process (0 while still unknown, e.g. during resolving). */
+  total: number;
+  /** Human readable status for the UI. */
+  message: string;
+}
+
+/**
+ * One line of the NDJSON stream returned by the parse endpoint: either an
+ * incremental progress update, the final result, or a terminal error.
+ */
+export type ParseStreamEvent =
+  | { type: "progress"; progress: ParseProgress }
+  | { type: "result"; result: ParseResult }
+  | { type: "error"; error: string };

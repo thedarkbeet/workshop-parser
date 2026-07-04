@@ -1,7 +1,12 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import type { ParseResult, ParseWarning } from "@/lib/steam/types";
+import type {
+  ParseProgress,
+  ParseResult,
+  ParseStreamEvent,
+  ParseWarning,
+} from "@/lib/steam/types";
 
 const WARNING_LABELS: Record<ParseWarning["reason"], string> = {
   "no-mod-id": "Mod ID не найден в описании — проверьте страницу мода вручную",
@@ -30,6 +35,34 @@ function CopyButton({ value, label }: { value: string; label: string }) {
     >
       {copied ? "Скопировано" : label}
     </button>
+  );
+}
+
+function ProgressBar({ progress }: { progress: ParseProgress }) {
+  const indeterminate = progress.total === 0;
+  const percent = indeterminate
+    ? 0
+    : Math.min(100, Math.round((progress.loaded / progress.total) * 100));
+
+  return (
+    <div className="flex flex-col gap-2" role="status" aria-live="polite">
+      <div className="flex items-center justify-between text-sm text-zinc-600 dark:text-zinc-400">
+        <span>{progress.message}</span>
+        {!indeterminate && (
+          <span className="font-mono text-xs">{percent}%</span>
+        )}
+      </div>
+      <div className="h-2 w-full overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-800">
+        {indeterminate ? (
+          <div className="h-full w-2/5 animate-[progress-indeterminate_1.2s_ease-in-out_infinite] rounded-full bg-zinc-900 dark:bg-zinc-100" />
+        ) : (
+          <div
+            className="h-full rounded-full bg-zinc-900 transition-[width] duration-300 ease-out dark:bg-zinc-100"
+            style={{ width: `${percent}%` }}
+          />
+        )}
+      </div>
+    </div>
   );
 }
 
@@ -72,6 +105,7 @@ export function CollectionParser() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<ParseResult | null>(null);
+  const [progress, setProgress] = useState<ParseProgress | null>(null);
 
   const handleSubmit = useCallback(
     async (event: React.FormEvent) => {
@@ -81,6 +115,12 @@ export function CollectionParser() {
       setLoading(true);
       setError(null);
       setResult(null);
+      setProgress({
+        phase: "collection",
+        loaded: 0,
+        total: 0,
+        message: "Отправляем запрос…",
+      });
 
       try {
         const res = await fetch("/api/parse-collection", {
@@ -88,18 +128,45 @@ export function CollectionParser() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ url }),
         });
-        const data = await res.json();
 
-        if (!res.ok) {
-          setError(data.error ?? "Не удалось обработать коллекцию.");
+        // Validation failures return a plain JSON error, not a stream.
+        if (!res.ok || !res.body) {
+          const data = await res.json().catch(() => null);
+          setError(data?.error ?? "Не удалось обработать коллекцию.");
           return;
         }
 
-        setResult(data as ParseResult);
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = "";
+
+        for (;;) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          buffer += decoder.decode(value, { stream: true });
+
+          let newlineIndex: number;
+          while ((newlineIndex = buffer.indexOf("\n")) >= 0) {
+            const line = buffer.slice(0, newlineIndex).trim();
+            buffer = buffer.slice(newlineIndex + 1);
+            if (!line) continue;
+
+            const streamEvent = JSON.parse(line) as ParseStreamEvent;
+            if (streamEvent.type === "progress") {
+              setProgress(streamEvent.progress);
+            } else if (streamEvent.type === "result") {
+              setResult(streamEvent.result);
+            } else if (streamEvent.type === "error") {
+              setError(streamEvent.error);
+            }
+          }
+        }
       } catch {
         setError("Сетевая ошибка. Попробуйте ещё раз.");
       } finally {
         setLoading(false);
+        setProgress(null);
       }
     },
     [loading, url],
@@ -132,6 +199,8 @@ export function CollectionParser() {
           </button>
         </div>
       </form>
+
+      {loading && progress && <ProgressBar progress={progress} />}
 
       {error && (
         <p className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300">

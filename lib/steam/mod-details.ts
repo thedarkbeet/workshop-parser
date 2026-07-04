@@ -89,14 +89,19 @@ async function requestPublishedFileDetails(
  */
 export async function fetchModDetails(
   workshopIds: string[],
+  onBatch?: (loaded: number, total: number) => void,
 ): Promise<ModEntry[]> {
   const byId = new Map<string, PublishedFileDetail>();
+  const total = workshopIds.length;
+  let loaded = 0;
 
   for (const batch of chunk(workshopIds, BATCH_SIZE)) {
     const details = await requestPublishedFileDetails(batch);
     for (const detail of details) {
       byId.set(detail.publishedfileid, detail);
     }
+    loaded += batch.length;
+    onBatch?.(loaded, total);
   }
 
   return workshopIds.map((workshopId) => {

@@ -3,6 +3,7 @@ import {
   parseCollection,
   SteamRequestError,
 } from "@/lib/steam/parse";
+import type { ParseStreamEvent } from "@/lib/steam/types";
 
 export const runtime = "nodejs";
 
@@ -28,22 +29,44 @@ export async function POST(request: Request) {
     );
   }
 
-  try {
-    const result = await parseCollection(body.url);
-    return Response.json(result);
-  } catch (error) {
-    if (error instanceof InvalidInputError) {
-      return Response.json({ error: error.message }, { status: 400 });
-    }
+  const url = body.url;
+  const encoder = new TextEncoder();
 
-    if (error instanceof SteamRequestError) {
-      return Response.json({ error: error.message }, { status: 502 });
-    }
+  const stream = new ReadableStream<Uint8Array>({
+    async start(controller) {
+      const send = (event: ParseStreamEvent) => {
+        controller.enqueue(encoder.encode(JSON.stringify(event) + "\n"));
+      };
 
-    console.error("Unexpected error while parsing collection", error);
-    return Response.json(
-      { error: "Непредвиденная ошибка при обработке коллекции." },
-      { status: 500 },
-    );
-  }
+      try {
+        const result = await parseCollection(url, (progress) =>
+          send({ type: "progress", progress }),
+        );
+        send({ type: "result", result });
+      } catch (error) {
+        if (
+          error instanceof InvalidInputError ||
+          error instanceof SteamRequestError
+        ) {
+          send({ type: "error", error: error.message });
+        } else {
+          console.error("Unexpected error while parsing collection", error);
+          send({
+            type: "error",
+            error: "Непредвиденная ошибка при обработке коллекции.",
+          });
+        }
+      } finally {
+        controller.close();
+      }
+    },
+  });
+
+  return new Response(stream, {
+    headers: {
+      "Content-Type": "application/x-ndjson; charset=utf-8",
+      "Cache-Control": "no-store, no-transform",
+      "X-Accel-Buffering": "no",
+    },
+  });
 }
