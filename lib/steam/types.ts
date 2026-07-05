@@ -49,3 +49,23 @@ export type ParseStreamEvent =
   | { type: "progress"; progress: ParseProgress }
   | { type: "result"; result: ParseResult }
   | { type: "error"; error: string };
+
+/** Localizable message keys produced while parsing a collection. */
+export type SteamMessageKey =
+  | "progressCollection"
+  | "progressMods"
+  | "invalidUrl"
+  | "collectionNotFound"
+  | "contactFailed"
+  | "statusError"
+  | "unexpected";
+
+/**
+ * Minimal translator contract used by the Steam pipeline so that `lib/steam`
+ * stays decoupled from any specific i18n library. Callers pass a function that
+ * resolves a message key (and optional ICU values) to a localized string.
+ */
+export type SteamTranslator = (
+  key: SteamMessageKey,
+  values?: Record<string, string | number>,
+) => string;

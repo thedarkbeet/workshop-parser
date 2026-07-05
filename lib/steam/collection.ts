@@ -1,3 +1,5 @@
+import type { SteamTranslator } from "./types";
+
 const COLLECTION_DETAILS_URL =
   "https://api.steampowered.com/ISteamRemoteStorage/GetCollectionDetails/v1/";
 
@@ -53,6 +55,7 @@ export function extractCollectionId(input: string): string | null {
 
 async function requestCollectionDetails(
   ids: string[],
+  t: SteamTranslator,
 ): Promise<CollectionDetail[]> {
   const body = new URLSearchParams();
   body.set("collectioncount", String(ids.length));
@@ -67,11 +70,11 @@ async function requestCollectionDetails(
       cache: "no-store",
     });
   } catch (cause) {
-    throw new SteamRequestError("Не удалось связаться со Steam.", { cause });
+    throw new SteamRequestError(t("contactFailed"), { cause });
   }
 
   if (!res.ok) {
-    throw new SteamRequestError(`Steam вернул статус ${res.status}.`);
+    throw new SteamRequestError(t("statusError", { status: res.status }));
   }
 
   const data = (await res.json()) as CollectionDetailsResponse;
@@ -85,6 +88,7 @@ async function requestCollectionDetails(
  */
 export async function fetchCollectionWorkshopIds(
   collectionId: string,
+  t: SteamTranslator,
 ): Promise<string[]> {
   const workshopIds: string[] = [];
   const seenItems = new Set<string>();
@@ -97,7 +101,7 @@ export async function fetchCollectionWorkshopIds(
     toQuery.forEach((id) => visitedCollections.add(id));
     if (toQuery.length === 0) break;
 
-    const details = await requestCollectionDetails(toQuery);
+    const details = await requestCollectionDetails(toQuery, t);
     const nextFrontier: string[] = [];
 
     for (const detail of details) {
@@ -122,9 +126,7 @@ export async function fetchCollectionWorkshopIds(
   }
 
   if (workshopIds.length === 0) {
-    throw new SteamRequestError(
-      "Коллекция не найдена или пуста. Проверьте ссылку и что коллекция публичная.",
-    );
+    throw new SteamRequestError(t("collectionNotFound"));
   }
 
   return workshopIds;

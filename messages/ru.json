@@ -1,0 +1,53 @@
+{
+  "metadata": {
+    "title": "Парсер коллекций Steam Workshop",
+    "description": "Сбор Workshop ID и Mod ID из коллекции Steam Workshop для сервера Project Zomboid."
+  },
+  "language": {
+    "label": "Язык",
+    "ru": "Русский",
+    "en": "English"
+  },
+  "home": {
+    "heading": "Парсер коллекций Workshop",
+    "intro": "Вставьте ссылку на коллекцию Steam Workshop для Project Zomboid. Инструмент соберёт <b>Workshop ID</b> и <b>Mod ID</b> для всех модов и подготовит готовые списки для конфига сервера."
+  },
+  "parser": {
+    "label": "Ссылка на коллекцию Steam Workshop",
+    "placeholder": "https://steamcommunity.com/sharedfiles/filedetails/?id=...",
+    "submit": "Разобрать",
+    "submitting": "Обработка…",
+    "sending": "Отправляем запрос…",
+    "copied": "Скопировано",
+    "copyList": "Копировать список",
+    "copyConfig": "Копировать {key}=",
+    "workshopIdTitle": "Workshop ID",
+    "modIdTitle": "Mod ID",
+    "resultSummary": "Коллекция <mono>{collectionId}</mono>: найдено {mods} модов, {modIds} Mod ID.",
+    "warningsTitle": "Требуют проверки ({count})",
+    "tableMod": "Мод",
+    "tableWorkshopId": "Workshop ID",
+    "tableModId": "Mod ID",
+    "unavailableShort": "недоступен",
+    "genericError": "Не удалось обработать коллекцию.",
+    "networkError": "Сетевая ошибка. Попробуйте ещё раз.",
+    "warnings": {
+      "no-mod-id": "Mod ID не найден в описании — проверьте страницу мода вручную",
+      "multiple-mod-ids": "Несколько Mod ID — выберите нужные",
+      "unavailable": "Мод недоступен (скрыт, забанен или удалён)"
+    }
+  },
+  "api": {
+    "expectedJson": "Ожидался JSON с полем `url`.",
+    "missingUrl": "Укажите ссылку на коллекцию Steam Workshop."
+  },
+  "steam": {
+    "progressCollection": "Получаем список модов из коллекции…",
+    "progressMods": "Читаем данные модов ({loaded} из {total})…",
+    "invalidUrl": "Не удалось распознать ссылку на коллекцию. Вставьте URL вида https://steamcommunity.com/sharedfiles/filedetails/?id=... или числовой ID.",
+    "collectionNotFound": "Коллекция не найдена или пуста. Проверьте ссылку и что коллекция публичная.",
+    "contactFailed": "Не удалось связаться со Steam.",
+    "statusError": "Steam вернул статус {status}.",
+    "unexpected": "Непредвиденная ошибка при обработке коллекции."
+  }
+}

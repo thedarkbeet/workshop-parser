@@ -1,14 +1,36 @@
+import { createTranslator, hasLocale } from "next-intl";
 import {
   InvalidInputError,
   parseCollection,
   SteamRequestError,
 } from "@/lib/steam/parse";
-import type { ParseStreamEvent } from "@/lib/steam/types";
+import type { ParseStreamEvent, SteamTranslator } from "@/lib/steam/types";
+import { loadMessages } from "@/i18n/messages";
+import { routing, type Locale } from "@/i18n/routing";
 
 export const runtime = "nodejs";
 
 interface ParseRequestBody {
   url?: unknown;
+  locale?: unknown;
+}
+
+function resolveLocale(value: unknown): Locale {
+  return typeof value === "string" && hasLocale(routing.locales, value)
+    ? value
+    : routing.defaultLocale;
+}
+
+async function getTranslators(locale: Locale) {
+  const messages = await loadMessages(locale);
+  return {
+    api: createTranslator({ locale, messages, namespace: "api" }),
+    steam: createTranslator({
+      locale,
+      messages,
+      namespace: "steam",
+    }) as unknown as SteamTranslator,
+  };
 }
 
 export async function POST(request: Request) {
@@ -16,17 +38,15 @@ export async function POST(request: Request) {
   try {
     body = (await request.json()) as ParseRequestBody;
   } catch {
-    return Response.json(
-      { error: "Ожидался JSON с полем `url`." },
-      { status: 400 },
-    );
+    const { api } = await getTranslators(routing.defaultLocale);
+    return Response.json({ error: api("expectedJson") }, { status: 400 });
   }
 
+  const locale = resolveLocale(body.locale);
+  const { api, steam } = await getTranslators(locale);
+
   if (typeof body.url !== "string" || body.url.trim() === "") {
-    return Response.json(
-      { error: "Укажите ссылку на коллекцию Steam Workshop." },
-      { status: 400 },
-    );
+    return Response.json({ error: api("missingUrl") }, { status: 400 });
   }
 
   const url = body.url;
@@ -39,7 +59,7 @@ export async function POST(request: Request) {
       };
 
       try {
-        const result = await parseCollection(url, (progress) =>
+        const result = await parseCollection(url, steam, (progress) =>
           send({ type: "progress", progress }),
         );
         send({ type: "result", result });
@@ -51,10 +71,7 @@ export async function POST(request: Request) {
           send({ type: "error", error: error.message });
         } else {
           console.error("Unexpected error while parsing collection", error);
-          send({
-            type: "error",
-            error: "Непредвиденная ошибка при обработке коллекции.",
-          });
+          send({ type: "error", error: steam("unexpected") });
         }
       } finally {
         controller.close();

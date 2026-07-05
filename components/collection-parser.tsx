@@ -1,20 +1,15 @@
 "use client";
 
 import { useCallback, useState } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import type {
   ParseProgress,
   ParseResult,
   ParseStreamEvent,
-  ParseWarning,
 } from "@/lib/steam/types";
 
-const WARNING_LABELS: Record<ParseWarning["reason"], string> = {
-  "no-mod-id": "Mod ID не найден в описании — проверьте страницу мода вручную",
-  "multiple-mod-ids": "Несколько Mod ID — выберите нужные",
-  unavailable: "Мод недоступен (скрыт, забанен или удалён)",
-};
-
 function CopyButton({ value, label }: { value: string; label: string }) {
+  const t = useTranslations("parser");
   const [copied, setCopied] = useState(false);
 
   const handleCopy = useCallback(async () => {
@@ -33,7 +28,7 @@ function CopyButton({ value, label }: { value: string; label: string }) {
       onClick={handleCopy}
       className="rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
     >
-      {copied ? "Скопировано" : label}
+      {copied ? t("copied") : label}
     </button>
   );
 }
@@ -75,6 +70,7 @@ function ResultBlock({
   configKey: string;
   values: string[];
 }) {
+  const t = useTranslations("parser");
   const joined = values.join(";");
   const configLine = `${configKey}=${joined}`;
 
@@ -86,8 +82,8 @@ function ResultBlock({
           <span className="font-normal text-zinc-500">({values.length})</span>
         </h3>
         <div className="flex gap-2">
-          <CopyButton value={joined} label="Копировать список" />
-          <CopyButton value={configLine} label={`Копировать ${configKey}=`} />
+          <CopyButton value={joined} label={t("copyList")} />
+          <CopyButton value={configLine} label={t("copyConfig", { key: configKey })} />
         </div>
       </div>
       <textarea
@@ -101,6 +97,8 @@ function ResultBlock({
 }
 
 export function CollectionParser() {
+  const t = useTranslations("parser");
+  const locale = useLocale();
   const [url, setUrl] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -119,20 +117,20 @@ export function CollectionParser() {
         phase: "collection",
         loaded: 0,
         total: 0,
-        message: "Отправляем запрос…",
+        message: t("sending"),
       });
 
       try {
         const res = await fetch("/api/parse-collection", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ url }),
+          body: JSON.stringify({ url, locale }),
         });
 
         // Validation failures return a plain JSON error, not a stream.
         if (!res.ok || !res.body) {
           const data = await res.json().catch(() => null);
-          setError(data?.error ?? "Не удалось обработать коллекцию.");
+          setError(data?.error ?? t("genericError"));
           return;
         }
 
@@ -163,13 +161,13 @@ export function CollectionParser() {
           }
         }
       } catch {
-        setError("Сетевая ошибка. Попробуйте ещё раз.");
+        setError(t("networkError"));
       } finally {
         setLoading(false);
         setProgress(null);
       }
     },
-    [loading, url],
+    [loading, url, locale, t],
   );
 
   return (
@@ -179,7 +177,7 @@ export function CollectionParser() {
           htmlFor="collection-url"
           className="text-sm font-medium text-zinc-700 dark:text-zinc-300"
         >
-          Ссылка на коллекцию Steam Workshop
+          {t("label")}
         </label>
         <div className="flex flex-col gap-2 sm:flex-row">
           <input
@@ -187,7 +185,7 @@ export function CollectionParser() {
             type="text"
             value={url}
             onChange={(event) => setUrl(event.target.value)}
-            placeholder="https://steamcommunity.com/sharedfiles/filedetails/?id=..."
+            placeholder={t("placeholder")}
             className="flex-1 rounded-lg border border-zinc-300 bg-white px-4 py-2.5 text-sm text-zinc-900 outline-none focus:border-zinc-500 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
           />
           <button
@@ -195,7 +193,7 @@ export function CollectionParser() {
             disabled={loading || url.trim() === ""}
             className="rounded-lg bg-zinc-900 px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
           >
-            {loading ? "Обработка…" : "Разобрать"}
+            {loading ? t("submitting") : t("submit")}
           </button>
         </div>
       </form>
@@ -211,19 +209,22 @@ export function CollectionParser() {
       {result && (
         <div className="flex flex-col gap-6">
           <p className="text-sm text-zinc-600 dark:text-zinc-400">
-            Коллекция{" "}
-            <span className="font-mono">{result.collectionId}</span>: найдено{" "}
-            {result.entries.length} модов, {result.modIds.length} Mod ID.
+            {t.rich("resultSummary", {
+              collectionId: result.collectionId,
+              mods: result.entries.length,
+              modIds: result.modIds.length,
+              mono: (chunks) => <span className="font-mono">{chunks}</span>,
+            })}
           </p>
 
           <div className="grid gap-4">
             <ResultBlock
-              title="Workshop ID"
+              title={t("workshopIdTitle")}
               configKey="WorkshopItems"
               values={result.workshopIds}
             />
             <ResultBlock
-              title="Mod ID"
+              title={t("modIdTitle")}
               configKey="Mods"
               values={result.modIds}
             />
@@ -232,7 +233,7 @@ export function CollectionParser() {
           {result.warnings.length > 0 && (
             <section className="flex flex-col gap-2 rounded-xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-900 dark:bg-amber-950/40">
               <h3 className="text-sm font-semibold text-amber-800 dark:text-amber-200">
-                Требуют проверки ({result.warnings.length})
+                {t("warningsTitle", { count: result.warnings.length })}
               </h3>
               <ul className="flex flex-col gap-1 text-sm text-amber-800 dark:text-amber-200">
                 {result.warnings.map((warning) => (
@@ -245,7 +246,7 @@ export function CollectionParser() {
                     >
                       {warning.title}
                     </a>{" "}
-                    — {WARNING_LABELS[warning.reason]}
+                    — {t(`warnings.${warning.reason}`)}
                   </li>
                 ))}
               </ul>
@@ -256,9 +257,11 @@ export function CollectionParser() {
             <table className="w-full text-left text-sm">
               <thead className="bg-zinc-100 text-zinc-600 dark:bg-zinc-900 dark:text-zinc-400">
                 <tr>
-                  <th className="px-4 py-2 font-medium">Мод</th>
-                  <th className="px-4 py-2 font-medium">Workshop ID</th>
-                  <th className="px-4 py-2 font-medium">Mod ID</th>
+                  <th className="px-4 py-2 font-medium">{t("tableMod")}</th>
+                  <th className="px-4 py-2 font-medium">
+                    {t("tableWorkshopId")}
+                  </th>
+                  <th className="px-4 py-2 font-medium">{t("tableModId")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -282,7 +285,9 @@ export function CollectionParser() {
                     </td>
                     <td className="px-4 py-2 font-mono text-zinc-600 dark:text-zinc-400">
                       {entry.unavailable ? (
-                        <span className="text-red-500">недоступен</span>
+                        <span className="text-red-500">
+                          {t("unavailableShort")}
+                        </span>
                       ) : entry.modIds.length > 0 ? (
                         entry.modIds.join(", ")
                       ) : (

@@ -1,0 +1,53 @@
+{
+  "metadata": {
+    "title": "Steam Workshop Collection Parser",
+    "description": "Collect Workshop IDs and Mod IDs from a Steam Workshop collection for a Project Zomboid server."
+  },
+  "language": {
+    "label": "Language",
+    "ru": "Русский",
+    "en": "English"
+  },
+  "home": {
+    "heading": "Workshop Collection Parser",
+    "intro": "Paste a link to a Steam Workshop collection for Project Zomboid. The tool will collect the <b>Workshop ID</b> and <b>Mod ID</b> for every mod and prepare ready-to-use lists for your server config."
+  },
+  "parser": {
+    "label": "Steam Workshop collection link",
+    "placeholder": "https://steamcommunity.com/sharedfiles/filedetails/?id=...",
+    "submit": "Parse",
+    "submitting": "Processing…",
+    "sending": "Sending request…",
+    "copied": "Copied",
+    "copyList": "Copy list",
+    "copyConfig": "Copy {key}=",
+    "workshopIdTitle": "Workshop ID",
+    "modIdTitle": "Mod ID",
+    "resultSummary": "Collection <mono>{collectionId}</mono>: found {mods} mods, {modIds} Mod IDs.",
+    "warningsTitle": "Needs review ({count})",
+    "tableMod": "Mod",
+    "tableWorkshopId": "Workshop ID",
+    "tableModId": "Mod ID",
+    "unavailableShort": "unavailable",
+    "genericError": "Could not process the collection.",
+    "networkError": "Network error. Please try again.",
+    "warnings": {
+      "no-mod-id": "Mod ID not found in the description — check the mod page manually",
+      "multiple-mod-ids": "Multiple Mod IDs — pick the ones you need",
+      "unavailable": "Mod is unavailable (hidden, banned or deleted)"
+    }
+  },
+  "api": {
+    "expectedJson": "Expected JSON with a `url` field.",
+    "missingUrl": "Provide a link to a Steam Workshop collection."
+  },
+  "steam": {
+    "progressCollection": "Fetching the list of mods from the collection…",
+    "progressMods": "Reading mod data ({loaded} of {total})…",
+    "invalidUrl": "Could not recognize the collection link. Paste a URL like https://steamcommunity.com/sharedfiles/filedetails/?id=... or a numeric ID.",
+    "collectionNotFound": "Collection not found or empty. Check the link and make sure the collection is public.",
+    "contactFailed": "Could not reach Steam.",
+    "statusError": "Steam returned status {status}.",
+    "unexpected": "Unexpected error while processing the collection."
+  }
+}

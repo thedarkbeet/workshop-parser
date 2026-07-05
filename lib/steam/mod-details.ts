@@ -1,5 +1,5 @@
 import { SteamRequestError } from "./collection";
-import type { ModEntry } from "./types";
+import type { ModEntry, SteamTranslator } from "./types";
 
 const PUBLISHED_FILE_DETAILS_URL =
   "https://api.steampowered.com/ISteamRemoteStorage/GetPublishedFileDetails/v1/";
@@ -57,6 +57,7 @@ function chunk<T>(items: T[], size: number): T[][] {
 
 async function requestPublishedFileDetails(
   ids: string[],
+  t: SteamTranslator,
 ): Promise<PublishedFileDetail[]> {
   const body = new URLSearchParams();
   body.set("itemcount", String(ids.length));
@@ -71,11 +72,11 @@ async function requestPublishedFileDetails(
       cache: "no-store",
     });
   } catch (cause) {
-    throw new SteamRequestError("Не удалось связаться со Steam.", { cause });
+    throw new SteamRequestError(t("contactFailed"), { cause });
   }
 
   if (!res.ok) {
-    throw new SteamRequestError(`Steam вернул статус ${res.status}.`);
+    throw new SteamRequestError(t("statusError", { status: res.status }));
   }
 
   const data = (await res.json()) as PublishedFileDetailsResponse;
@@ -89,6 +90,7 @@ async function requestPublishedFileDetails(
  */
 export async function fetchModDetails(
   workshopIds: string[],
+  t: SteamTranslator,
   onBatch?: (loaded: number, total: number) => void,
 ): Promise<ModEntry[]> {
   const byId = new Map<string, PublishedFileDetail>();
@@ -96,7 +98,7 @@ export async function fetchModDetails(
   let loaded = 0;
 
   for (const batch of chunk(workshopIds, BATCH_SIZE)) {
-    const details = await requestPublishedFileDetails(batch);
+    const details = await requestPublishedFileDetails(batch, t);
     for (const detail of details) {
       byId.set(detail.publishedfileid, detail);
     }

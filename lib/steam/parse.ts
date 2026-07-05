@@ -5,7 +5,12 @@ import {
   SteamRequestError,
 } from "./collection";
 import { fetchModDetails } from "./mod-details";
-import type { ParseProgress, ParseResult, ParseWarning } from "./types";
+import type {
+  ParseProgress,
+  ParseResult,
+  ParseWarning,
+  SteamTranslator,
+} from "./types";
 
 export { InvalidInputError, SteamRequestError };
 
@@ -14,41 +19,41 @@ export { InvalidInputError, SteamRequestError };
  * de-duplicated `WorkshopItems` / `Mods` lists plus manual-check warnings.
  *
  * `onProgress` is invoked as work advances so callers (e.g. a streaming route)
- * can surface a progress bar.
+ * can surface a progress bar. `t` localizes all user-facing progress and error
+ * messages produced along the way.
  */
 export async function parseCollection(
   input: string,
+  t: SteamTranslator,
   onProgress?: (progress: ParseProgress) => void,
 ): Promise<ParseResult> {
   const collectionId = extractCollectionId(input);
   if (!collectionId) {
-    throw new InvalidInputError(
-      "Не удалось распознать ссылку на коллекцию. Вставьте URL вида https://steamcommunity.com/sharedfiles/filedetails/?id=... или числовой ID.",
-    );
+    throw new InvalidInputError(t("invalidUrl"));
   }
 
   onProgress?.({
     phase: "collection",
     loaded: 0,
     total: 0,
-    message: "Получаем список модов из коллекции…",
+    message: t("progressCollection"),
   });
 
-  const workshopIds = await fetchCollectionWorkshopIds(collectionId);
+  const workshopIds = await fetchCollectionWorkshopIds(collectionId, t);
 
   onProgress?.({
     phase: "mods",
     loaded: 0,
     total: workshopIds.length,
-    message: `Читаем данные модов (0 из ${workshopIds.length})…`,
+    message: t("progressMods", { loaded: 0, total: workshopIds.length }),
   });
 
-  const entries = await fetchModDetails(workshopIds, (loaded, total) => {
+  const entries = await fetchModDetails(workshopIds, t, (loaded, total) => {
     onProgress?.({
       phase: "mods",
       loaded,
       total,
-      message: `Читаем данные модов (${loaded} из ${total})…`,
+      message: t("progressMods", { loaded, total }),
     });
   });
 
