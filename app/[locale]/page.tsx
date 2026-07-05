@@ -1,4 +1,5 @@
 import { getTranslations, setRequestLocale } from "next-intl/server";
+
 import { CollectionParser } from "@/components/collection-parser";
 
 export default async function Home({
@@ -19,7 +20,7 @@ export default async function Home({
           </h1>
           <p className="max-w-xl text-base leading-7 text-zinc-600 dark:text-zinc-400">
             {t.rich("intro", {
-              b: (chunks) => (
+              b: chunks => (
                 <span className="font-medium text-zinc-800 dark:text-zinc-200">
                   {chunks}
                 </span>

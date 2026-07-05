@@ -1,3 +1,10 @@
+import type {
+  ParseProgress,
+  ParseResult,
+  ParseWarning,
+  SteamTranslator,
+} from "./types";
+
 import {
   extractCollectionId,
   fetchCollectionWorkshopIds,
@@ -5,12 +12,6 @@ import {
   SteamRequestError,
 } from "./collection";
 import { fetchModDetails } from "./mod-details";
-import type {
-  ParseProgress,
-  ParseResult,
-  ParseWarning,
-  SteamTranslator,
-} from "./types";
 
 export { InvalidInputError, SteamRequestError };
 
@@ -77,7 +78,8 @@ export async function parseCollection(
         title: entry.title,
         reason: "no-mod-id",
       });
-    } else if (entry.modIds.length > 1) {
+    }
+    else if (entry.modIds.length > 1) {
       warnings.push({
         workshopId: entry.workshopId,
         title: entry.title,

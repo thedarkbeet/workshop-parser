@@ -1,19 +1,22 @@
 import { createTranslator, hasLocale } from "next-intl";
+
+import type { Locale } from "@/i18n/routing";
+import type { ParseStreamEvent, SteamTranslator } from "@/lib/steam/types";
+
+import { loadMessages } from "@/i18n/messages";
+import { routing } from "@/i18n/routing";
 import {
   InvalidInputError,
   parseCollection,
   SteamRequestError,
 } from "@/lib/steam/parse";
-import type { ParseStreamEvent, SteamTranslator } from "@/lib/steam/types";
-import { loadMessages } from "@/i18n/messages";
-import { routing, type Locale } from "@/i18n/routing";
 
 export const runtime = "nodejs";
 
-interface ParseRequestBody {
+type ParseRequestBody = {
   url?: unknown;
   locale?: unknown;
-}
+};
 
 function resolveLocale(value: unknown): Locale {
   return typeof value === "string" && hasLocale(routing.locales, value)
@@ -37,7 +40,8 @@ export async function POST(request: Request) {
   let body: ParseRequestBody;
   try {
     body = (await request.json()) as ParseRequestBody;
-  } catch {
+  }
+  catch {
     const { api } = await getTranslators(routing.defaultLocale);
     return Response.json({ error: api("expectedJson") }, { status: 400 });
   }
@@ -55,25 +59,27 @@ export async function POST(request: Request) {
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
       const send = (event: ParseStreamEvent) => {
-        controller.enqueue(encoder.encode(JSON.stringify(event) + "\n"));
+        controller.enqueue(encoder.encode(`${JSON.stringify(event)}\n`));
       };
 
       try {
-        const result = await parseCollection(url, steam, (progress) =>
-          send({ type: "progress", progress }),
-        );
+        const result = await parseCollection(url, steam, progress =>
+          send({ type: "progress", progress }));
         send({ type: "result", result });
-      } catch (error) {
+      }
+      catch (error) {
         if (
-          error instanceof InvalidInputError ||
-          error instanceof SteamRequestError
+          error instanceof InvalidInputError
+          || error instanceof SteamRequestError
         ) {
           send({ type: "error", error: error.message });
-        } else {
+        }
+        else {
           console.error("Unexpected error while parsing collection", error);
           send({ type: "error", error: steam("unexpected") });
         }
-      } finally {
+      }
+      finally {
         controller.close();
       }
     },

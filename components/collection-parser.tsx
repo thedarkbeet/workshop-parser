@@ -1,7 +1,8 @@
 "use client";
 
-import { useCallback, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
+import { useCallback, useState } from "react";
+
 import type {
   ParseProgress,
   ParseResult,
@@ -16,8 +17,9 @@ function CopyButton({ value, label }: { value: string; label: string }) {
     try {
       await navigator.clipboard.writeText(value);
       setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
-    } catch {
+      setTimeout(setCopied, 1500, false);
+    }
+    catch {
       setCopied(false);
     }
   }, [value]);
@@ -44,18 +46,23 @@ function ProgressBar({ progress }: { progress: ParseProgress }) {
       <div className="flex items-center justify-between text-sm text-zinc-600 dark:text-zinc-400">
         <span>{progress.message}</span>
         {!indeterminate && (
-          <span className="font-mono text-xs">{percent}%</span>
+          <span className="font-mono text-xs">
+            {percent}
+            %
+          </span>
         )}
       </div>
       <div className="h-2 w-full overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-800">
-        {indeterminate ? (
-          <div className="h-full w-2/5 animate-[progress-indeterminate_1.2s_ease-in-out_infinite] rounded-full bg-zinc-900 dark:bg-zinc-100" />
-        ) : (
-          <div
-            className="h-full rounded-full bg-zinc-900 transition-[width] duration-300 ease-out dark:bg-zinc-100"
-            style={{ width: `${percent}%` }}
-          />
-        )}
+        {indeterminate
+          ? (
+              <div className="h-full w-2/5 animate-[progress-indeterminate_1.2s_ease-in-out_infinite] rounded-full bg-zinc-900 dark:bg-zinc-100" />
+            )
+          : (
+              <div
+                className="h-full rounded-full bg-zinc-900 transition-[width] duration-300 ease-out dark:bg-zinc-100"
+                style={{ width: `${percent}%` }}
+              />
+            )}
       </div>
     </div>
   );
@@ -78,8 +85,13 @@ function ResultBlock({
     <section className="flex flex-col gap-2 rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950">
       <div className="flex items-center justify-between gap-2">
         <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-          {title}{" "}
-          <span className="font-normal text-zinc-500">({values.length})</span>
+          {title}
+          {" "}
+          <span className="font-normal text-zinc-500">
+            (
+            {values.length}
+            )
+          </span>
         </h3>
         <div className="flex gap-2">
           <CopyButton value={joined} label={t("copyList")} />
@@ -108,7 +120,8 @@ export function CollectionParser() {
   const handleSubmit = useCallback(
     async (event: React.FormEvent) => {
       event.preventDefault();
-      if (loading || url.trim() === "") return;
+      if (loading || url.trim() === "")
+        return;
 
       setLoading(true);
       setError(null);
@@ -140,29 +153,38 @@ export function CollectionParser() {
 
         for (;;) {
           const { done, value } = await reader.read();
-          if (done) break;
+          if (done)
+            break;
 
           buffer += decoder.decode(value, { stream: true });
 
-          let newlineIndex: number;
-          while ((newlineIndex = buffer.indexOf("\n")) >= 0) {
+          for (;;) {
+            const newlineIndex = buffer.indexOf("\n");
+            if (newlineIndex < 0)
+              break;
+
             const line = buffer.slice(0, newlineIndex).trim();
             buffer = buffer.slice(newlineIndex + 1);
-            if (!line) continue;
+            if (!line)
+              continue;
 
             const streamEvent = JSON.parse(line) as ParseStreamEvent;
             if (streamEvent.type === "progress") {
               setProgress(streamEvent.progress);
-            } else if (streamEvent.type === "result") {
+            }
+            else if (streamEvent.type === "result") {
               setResult(streamEvent.result);
-            } else if (streamEvent.type === "error") {
+            }
+            else if (streamEvent.type === "error") {
               setError(streamEvent.error);
             }
           }
         }
-      } catch {
+      }
+      catch {
         setError(t("networkError"));
-      } finally {
+      }
+      finally {
         setLoading(false);
         setProgress(null);
       }
@@ -184,7 +206,7 @@ export function CollectionParser() {
             id="collection-url"
             type="text"
             value={url}
-            onChange={(event) => setUrl(event.target.value)}
+            onChange={event => setUrl(event.target.value)}
             placeholder={t("placeholder")}
             className="flex-1 rounded-lg border border-zinc-300 bg-white px-4 py-2.5 text-sm text-zinc-900 outline-none focus:border-zinc-500 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
           />
@@ -213,7 +235,7 @@ export function CollectionParser() {
               collectionId: result.collectionId,
               mods: result.entries.length,
               modIds: result.modIds.length,
-              mono: (chunks) => <span className="font-mono">{chunks}</span>,
+              mono: chunks => <span className="font-mono">{chunks}</span>,
             })}
           </p>
 
@@ -236,7 +258,7 @@ export function CollectionParser() {
                 {t("warningsTitle", { count: result.warnings.length })}
               </h3>
               <ul className="flex flex-col gap-1 text-sm text-amber-800 dark:text-amber-200">
-                {result.warnings.map((warning) => (
+                {result.warnings.map(warning => (
                   <li key={`${warning.workshopId}-${warning.reason}`}>
                     <a
                       href={`https://steamcommunity.com/sharedfiles/filedetails/?id=${warning.workshopId}`}
@@ -245,8 +267,11 @@ export function CollectionParser() {
                       className="font-medium underline"
                     >
                       {warning.title}
-                    </a>{" "}
-                    — {t(`warnings.${warning.reason}`)}
+                    </a>
+                    {" "}
+                    —
+                    {" "}
+                    {t(`warnings.${warning.reason}`)}
                   </li>
                 ))}
               </ul>
@@ -265,7 +290,7 @@ export function CollectionParser() {
                 </tr>
               </thead>
               <tbody>
-                {result.entries.map((entry) => (
+                {result.entries.map(entry => (
                   <tr
                     key={entry.workshopId}
                     className="border-t border-zinc-100 dark:border-zinc-800"
@@ -284,15 +309,19 @@ export function CollectionParser() {
                       {entry.workshopId}
                     </td>
                     <td className="px-4 py-2 font-mono text-zinc-600 dark:text-zinc-400">
-                      {entry.unavailable ? (
-                        <span className="text-red-500">
-                          {t("unavailableShort")}
-                        </span>
-                      ) : entry.modIds.length > 0 ? (
-                        entry.modIds.join(", ")
-                      ) : (
-                        <span className="text-amber-600">—</span>
-                      )}
+                      {entry.unavailable
+                        ? (
+                            <span className="text-red-500">
+                              {t("unavailableShort")}
+                            </span>
+                          )
+                        : entry.modIds.length > 0
+                          ? (
+                              entry.modIds.join(", ")
+                            )
+                          : (
+                              <span className="text-amber-600">—</span>
+                            )}
                     </td>
                   </tr>
                 ))}

@@ -1,29 +1,29 @@
 import type { SteamTranslator } from "./types";
 
-const COLLECTION_DETAILS_URL =
-  "https://api.steampowered.com/ISteamRemoteStorage/GetCollectionDetails/v1/";
+const COLLECTION_DETAILS_URL
+  = "https://api.steampowered.com/ISteamRemoteStorage/GetCollectionDetails/v1/";
 
 const STEAM_RESULT_OK = 1;
 /** Steam `EWorkshopFileType`: a child that is itself a collection. */
 const FILETYPE_COLLECTION = 2;
 
-interface CollectionChild {
+type CollectionChild = {
   publishedfileid: string;
   filetype: number;
-}
+};
 
-interface CollectionDetail {
+type CollectionDetail = {
   publishedfileid: string;
   result: number;
   children?: CollectionChild[];
-}
+};
 
-interface CollectionDetailsResponse {
+type CollectionDetailsResponse = {
   response?: {
     result?: number;
     collectiondetails?: CollectionDetail[];
   };
-}
+};
 
 /** Upstream (Steam) failure or missing data — surfaced as a 502. */
 export class SteamRequestError extends Error {}
@@ -37,19 +37,23 @@ export class InvalidInputError extends Error {}
  */
 export function extractCollectionId(input: string): string | null {
   const trimmed = input.trim();
-  if (!trimmed) return null;
+  if (!trimmed)
+    return null;
 
-  if (/^\d+$/.test(trimmed)) return trimmed;
+  if (/^\d+$/.test(trimmed))
+    return trimmed;
 
   try {
     const url = new URL(trimmed);
     const fromQuery = url.searchParams.get("id");
-    if (fromQuery && /^\d+$/.test(fromQuery)) return fromQuery;
-  } catch {
+    if (fromQuery && /^\d+$/.test(fromQuery))
+      return fromQuery;
+  }
+  catch {
     // Not a URL, fall through to the loose match below.
   }
 
-  const match = trimmed.match(/(?:[?&]id=)(\d+)/);
+  const match = trimmed.match(/[?&]id=(\d+)/);
   return match ? match[1] : null;
 }
 
@@ -69,7 +73,8 @@ async function requestCollectionDetails(
       body,
       cache: "no-store",
     });
-  } catch (cause) {
+  }
+  catch (cause) {
     throw new SteamRequestError(t("contactFailed"), { cause });
   }
 
@@ -97,21 +102,24 @@ export async function fetchCollectionWorkshopIds(
   let frontier = [collectionId];
 
   while (frontier.length > 0) {
-    const toQuery = frontier.filter((id) => !visitedCollections.has(id));
-    toQuery.forEach((id) => visitedCollections.add(id));
-    if (toQuery.length === 0) break;
+    const toQuery = frontier.filter(id => !visitedCollections.has(id));
+    toQuery.forEach(id => visitedCollections.add(id));
+    if (toQuery.length === 0)
+      break;
 
     const details = await requestCollectionDetails(toQuery, t);
     const nextFrontier: string[] = [];
 
     for (const detail of details) {
-      if (detail.result !== STEAM_RESULT_OK || !detail.children) continue;
+      if (detail.result !== STEAM_RESULT_OK || !detail.children)
+        continue;
 
       for (const child of detail.children) {
         const childId = child.publishedfileid;
 
         if (child.filetype === FILETYPE_COLLECTION) {
-          if (!visitedCollections.has(childId)) nextFrontier.push(childId);
+          if (!visitedCollections.has(childId))
+            nextFrontier.push(childId);
           continue;
         }
 

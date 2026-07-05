@@ -1,4 +1,5 @@
 import type { AbstractIntlMessages } from "next-intl";
+
 import type { Locale } from "./routing";
 
 export async function loadMessages(

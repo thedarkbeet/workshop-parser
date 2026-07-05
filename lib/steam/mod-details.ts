@@ -1,25 +1,26 @@
-import { SteamRequestError } from "./collection";
 import type { ModEntry, SteamTranslator } from "./types";
 
-const PUBLISHED_FILE_DETAILS_URL =
-  "https://api.steampowered.com/ISteamRemoteStorage/GetPublishedFileDetails/v1/";
+import { SteamRequestError } from "./collection";
+
+const PUBLISHED_FILE_DETAILS_URL
+  = "https://api.steampowered.com/ISteamRemoteStorage/GetPublishedFileDetails/v1/";
 
 const STEAM_RESULT_OK = 1;
 /** Steam caps a single GetPublishedFileDetails call; stay comfortably under it. */
 const BATCH_SIZE = 50;
 
-interface PublishedFileDetail {
+type PublishedFileDetail = {
   publishedfileid: string;
   result: number;
   title?: string;
   description?: string;
-}
+};
 
-interface PublishedFileDetailsResponse {
+type PublishedFileDetailsResponse = {
   response?: {
     publishedfiledetails?: PublishedFileDetail[];
   };
-}
+};
 
 /**
  * Extracts Project Zomboid `Mod ID` values from a workshop description.
@@ -31,8 +32,8 @@ export function extractModIds(description: string): string[] {
   const seen = new Set<string>();
   const pattern = /Mod\s*ID\s*:\s*(.+)/gi;
 
-  let match: RegExpExecArray | null;
-  while ((match = pattern.exec(description)) !== null) {
+  let match = pattern.exec(description);
+  while (match !== null) {
     const value = match[1]
       .replace(/\[[^\]]*\]/g, "") // strip BBCode like [b] / [/b]
       .split(/[\r\n]/)[0]
@@ -42,6 +43,7 @@ export function extractModIds(description: string): string[] {
       seen.add(value);
       ids.push(value);
     }
+    match = pattern.exec(description);
   }
 
   return ids;
@@ -71,7 +73,8 @@ async function requestPublishedFileDetails(
       body,
       cache: "no-store",
     });
-  } catch (cause) {
+  }
+  catch (cause) {
     throw new SteamRequestError(t("contactFailed"), { cause });
   }
 
