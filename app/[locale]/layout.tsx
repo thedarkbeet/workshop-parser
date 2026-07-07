@@ -59,7 +59,16 @@ export default async function LocaleLayout({
     >
       <body className="min-h-full flex flex-col">
         <NextIntlClientProvider>
-          <div className="flex w-full justify-end px-6 py-3 sm:px-10">
+          <div className="mx-auto flex w-full max-w-[920px] items-center justify-between px-8 py-3 sm:px-14 lg:px-20">
+            <a
+              href="https://thebeet.dev"
+              className="group text-sm font-medium"
+            >
+              <span className="text-zinc-900">thebeet</span>
+              <span className="text-zinc-500 transition-colors duration-300 group-hover:text-rose-700">
+                .dev
+              </span>
+            </a>
             <LanguageSwitcher />
           </div>
           {children}
