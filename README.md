@@ -214,8 +214,8 @@ There is no retry logic or backoff. If parsing fails due to a transient Steam er
 
 Locales are configured in `i18n/routing.ts`:
 
-- `ru` — default
-- `en`
+- `ru` 
+- `en` — default
 
 Translation files live in `messages/`. The API accepts a `locale` field so error and progress messages match the UI language. Locale routing is handled by `proxy.ts` (next-intl middleware).
 
