@@ -40,7 +40,7 @@ export default async function Home({
 
             rel="noopener noreferrer"
 
-            className="group flex items-center gap-1 transition-colors hover:text-zinc-900"
+            className="group flex items-center gap-1 transition-colors hover:text-zinc-400"
           >
 
             <span>Found it useful? Leave a</span>

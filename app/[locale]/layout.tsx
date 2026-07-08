@@ -64,7 +64,7 @@ export default async function LocaleLayout({
               href="https://thebeet.dev"
               className="group text-sm font-medium"
             >
-              <span className="text-zinc-900">thebeet</span>
+              <span className="text-zinc-600">thebeet</span>
               <span className="text-zinc-500 transition-colors duration-300 group-hover:text-rose-700">
                 .dev
               </span>
