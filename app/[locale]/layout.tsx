@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 
+import { Analytics } from "@vercel/analytics/next";
 import { hasLocale, NextIntlClientProvider } from "next-intl";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Geist, Geist_Mono } from "next/font/google";
@@ -9,6 +10,7 @@ import { LanguageSwitcher } from "@/components/language-switcher";
 import { routing } from "@/i18n/routing";
 
 import "../globals.css";
+import { SITE_URL } from "@/lib/site-url";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -19,6 +21,11 @@ const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
 });
+
+const ogLocales: Record<string, string> = {
+  ru: "ru_RU",
+  en: "en_US",
+};
 
 export function generateStaticParams() {
   return routing.locales.map(locale => ({ locale }));
@@ -31,10 +38,42 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: "metadata" });
+  const title = t("title");
+  const description = t("description");
+  const canonicalPath = `/${locale}`;
 
   return {
-    title: t("title"),
-    description: t("description"),
+    metadataBase: new URL(SITE_URL),
+    title,
+    description,
+    alternates: {
+      canonical: canonicalPath,
+      languages: {
+        "ru": "/ru",
+        "en": "/en",
+        "x-default": `/${routing.defaultLocale}`,
+      },
+    },
+    openGraph: {
+      type: "website",
+      url: canonicalPath,
+      siteName: "Workshop Parser",
+      title,
+      description,
+      locale: ogLocales[locale] ?? locale,
+      alternateLocale: routing.locales
+        .filter(l => l !== locale)
+        .map(l => ogLocales[l] ?? l),
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+    },
+    robots: {
+      index: true,
+      follow: true,
+    },
   };
 }
 
@@ -72,6 +111,7 @@ export default async function LocaleLayout({
             <LanguageSwitcher />
           </div>
           {children}
+          <Analytics />
         </NextIntlClientProvider>
       </body>
     </html>
