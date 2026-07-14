@@ -1,15 +1,16 @@
 import type { Metadata } from "next";
 
 import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import { hasLocale, NextIntlClientProvider } from "next-intl";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Geist, Geist_Mono } from "next/font/google";
 import { notFound } from "next/navigation";
 
 import { LanguageSwitcher } from "@/components/language-switcher";
-import { routing } from "@/i18n/routing";
 
 import "../globals.css";
+import { routing } from "@/i18n/routing";
 import { SITE_URL } from "@/lib/site-url";
 
 const geistSans = Geist({
@@ -74,6 +75,9 @@ export async function generateMetadata({
       index: true,
       follow: true,
     },
+    verification: {
+      google: "bNnzWx62pwb1H0V_HNQRzIc8FJScIvp5TtpVZeBib44",
+    },
   };
 }
 
@@ -112,6 +116,7 @@ export default async function LocaleLayout({
           </div>
           {children}
           <Analytics />
+          <SpeedInsights />
         </NextIntlClientProvider>
       </body>
     </html>
